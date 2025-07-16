@@ -58,8 +58,7 @@ class GPSHomePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text('GPS Tracker Map')),
+    return Scaffold( 
       body: Obx(() {
         final current = locationCtrl.currentPos.value;
 
