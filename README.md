@@ -1,5 +1,9 @@
-# my_flutter_app 📱 
 
+# my_flutter_app 📱 
+satart the android emulator : 
+```
+C:\android-sdk\emulator\emulator.exe -avd Flutter_AVD -no-audio -gpu swiftshader_indirect
+```
 A new Flutter project.
 
 ## Getting Started
