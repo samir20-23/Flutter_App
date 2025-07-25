@@ -1,3 +1,4 @@
+# pubspec.yaml
 name: my_flutter_app
 description: "A new Flutter project."
 publish_to: "none"
@@ -14,6 +15,10 @@ dependencies:
   cupertino_icons: ^1.0.8
   get: ^4.7.2
   geolocator: ^14.0.2
+  firebase_core: ^2.4.1
+  firebase_database: ^10.0.10
+  shared_preferences: ^2.0.15
+  uuid: ^3.0.6
 
 dev_dependencies:
   flutter_test:

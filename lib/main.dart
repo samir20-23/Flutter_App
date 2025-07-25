@@ -1,12 +1,15 @@
+// lib/main.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
-import 'package:geolocator/geolocator.dart';
 import 'package:get/get.dart';
 import 'package:latlong2/latlong.dart';
-
+import 'firebase_config.dart';
+import 'location_controller.dart';
 import 'iphone_shell.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await FirebaseConfig.init();
   runApp(
     GetMaterialApp(
       debugShowCheckedModeBanner: false,
@@ -15,87 +18,71 @@ void main() {
   );
 }
 
-class LocationController extends GetxController {
-  var currentPos = Rxn<LatLng>();
-
-  @override
-  void onInit() {
-    super.onInit();
-    determinePosition();
-  }
-
-  Future<void> determinePosition() async {
-    bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
-    if (!serviceEnabled) {
-      Get.snackbar("Location", "Service is disabled");
-      return;
-    }
-
-    LocationPermission permission = await Geolocator.checkPermission();
-    if (permission == LocationPermission.denied) {
-      permission = await Geolocator.requestPermission();
-      if (permission == LocationPermission.denied) {
-        Get.snackbar("Permission", "Location permission denied");
-        return;
-      }
-    }
-
-    if (permission == LocationPermission.deniedForever) {
-      Get.snackbar("Permission", "Location permission permanently denied");
-      return;
-    }
-
-    Position pos = await Geolocator.getCurrentPosition(
-      desiredAccuracy: LocationAccuracy.high,
-    );
-
-    currentPos.value = LatLng(pos.latitude, pos.longitude);
-  }
-}
-
 class GPSHomePage extends StatelessWidget {
-  final LocationController locationCtrl = Get.put(LocationController());
+  final LocationController ctrl = Get.put(LocationController());
+  final MapController mapCtrl = MapController();
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold( 
+    return Scaffold(
       body: Obx(() {
-        final current = locationCtrl.currentPos.value;
-
-        if (current == null) {
-          return const Center(child: CircularProgressIndicator());
-        }
-
+        final pos = ctrl.currentPos.value;
+        final route = ctrl.path.toList();
+        final others = ctrl.others.entries.toList();
+        if (pos == null) return const Center(child: CircularProgressIndicator());
         return FlutterMap(
-          options: MapOptions(
-            initialCenter: current,
-            initialZoom: 15.0,
-          ),
+          mapController: mapCtrl,
+          options: MapOptions(initialCenter: pos, initialZoom: 15.0),
           children: [
             TileLayer(
               urlTemplate: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
               subdomains: const ['a', 'b', 'c'],
             ),
+            PolylineLayer(
+              polylines: [
+                Polyline(points: route, strokeWidth: 4.0),
+              ],
+            ),
             MarkerLayer(
               markers: [
                 Marker(
-                  point: current,
+                  point: pos,
                   width: 80,
                   height: 80,
-                  child: Icon(
-                    Icons.location_pin,
-                    color: Colors.red,
-                    size: 40,
-                  ),
+                  child: const Icon(Icons.location_pin, color: Colors.red, size: 40),
                 ),
+                for (var e in others)
+                  Marker(
+                    point: e.value,
+                    width: 60,
+                    height: 60,
+                    child: const Icon(Icons.directions_car, size: 30, color: Colors.blue),
+                  ),
               ],
             ),
           ],
         );
       }),
-      floatingActionButton: FloatingActionButton(
-        child: const Icon(Icons.my_location),
-        onPressed: () => locationCtrl.determinePosition(),
+      floatingActionButton: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          FloatingActionButton(
+            heroTag: 'toggle',
+            child: Obx(() => Icon(
+              ctrl.isTracking ? Icons.pause_circle_filled : Icons.play_circle_fill
+            )),
+            onPressed: () => ctrl.isTracking ? ctrl.stop() : ctrl.restart(),
+          ),
+          const SizedBox(height: 10),
+          FloatingActionButton(
+            heroTag: 'recenter',
+            child: const Icon(Icons.my_location),
+            onPressed: () {
+              final p = ctrl.currentPos.value;
+              if (p != null) mapCtrl.move(p, 15.0);
+            },
+          ),
+        ],
       ),
     );
   }
