@@ -10,6 +10,8 @@
 Invoke-WebRequest -Uri "https://storage.googleapis.com/flutter_infra_release/releases/stable/windows/flutter_windows_3.0.5-stable.zip" -OutFile "flutter.zip"
 
 # Extract
+# Extract
+# Extract
 Expand-Archive flutter.zip -DestinationPath C:\flutter
 
 # Set PATH
